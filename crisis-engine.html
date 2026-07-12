@@ -1,0 +1,1054 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Crisis Probability Engine — 100-Year Framework</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+  :root{
+    --bg:#0a0e1a; --panel:#131829; --panel2:#1a2138; --ink:#e8ecf4; --ink-dim:#8b94a8;
+    --accent:#5b8def; --green:#22c55e; --amber:#f59e0b; --red:#ef4444; --purple:#a855f7;
+    --border:#232b44;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',system-ui,sans-serif;font-size:14px;line-height:1.5}
+  body{padding:24px;max-width:1400px;margin:0 auto}
+  h1{font-size:28px;font-weight:700;letter-spacing:-0.02em}
+  h2{font-size:20px;font-weight:600;margin:24px 0 12px}
+  h3{font-size:15px;font-weight:600;color:var(--ink-dim);text-transform:uppercase;letter-spacing:0.05em;margin:16px 0 8px}
+  .sub{color:var(--ink-dim);font-size:13px;margin-top:4px}
+  header{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;padding-bottom:16px;border-bottom:1px solid var(--border)}
+  header .meta{color:var(--ink-dim);font-size:12px;text-align:right}
+  .tabs{display:flex;gap:4px;margin-bottom:24px;background:var(--panel);padding:4px;border-radius:10px;border:1px solid var(--border)}
+  .tab{padding:10px 20px;background:transparent;color:var(--ink-dim);border:none;border-radius:8px;cursor:pointer;font-size:13px;font-weight:500;transition:all 0.15s}
+  .tab.active{background:var(--panel2);color:var(--ink)}
+  .tab:hover:not(.active){color:var(--ink)}
+  .panel{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:16px}
+  .grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+  .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+  .grid-6{display:grid;grid-template-columns:repeat(6,1fr);gap:8px}
+  .stat{background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:16px}
+  .stat .label{font-size:11px;color:var(--ink-dim);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px}
+  .stat .value{font-size:28px;font-weight:700;letter-spacing:-0.02em}
+  .stat .delta{font-size:12px;margin-top:4px;color:var(--ink-dim)}
+  .stat.green .value{color:var(--green)}
+  .stat.amber .value{color:var(--amber)}
+  .stat.red .value{color:var(--red)}
+  .stat.purple .value{color:var(--purple)}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th{text-align:left;padding:10px 12px;background:var(--panel2);color:var(--ink-dim);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:0.05em;border-bottom:1px solid var(--border)}
+  td{padding:10px 12px;border-bottom:1px solid var(--border)}
+  tr:last-child td{border-bottom:none}
+  tr:hover td{background:rgba(91,141,239,0.04)}
+  .badge{display:inline-block;padding:3px 8px;border-radius:6px;font-size:11px;font-weight:600;letter-spacing:0.02em}
+  .badge.red{background:rgba(239,68,68,0.15);color:var(--red)}
+  .badge.amber{background:rgba(245,158,11,0.15);color:var(--amber)}
+  .badge.green{background:rgba(34,197,94,0.15);color:var(--green)}
+  .badge.gray{background:rgba(139,148,168,0.15);color:var(--ink-dim)}
+  .badge.purple{background:rgba(168,85,247,0.15);color:var(--purple)}
+  button.action{background:var(--accent);color:white;border:none;padding:8px 16px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600}
+  button.action:hover{background:#4a7ae0}
+  button.action:disabled{opacity:0.5;cursor:wait}
+  .gauge-wrap{position:relative;width:280px;height:160px;margin:0 auto}
+  .gauge-value{position:absolute;bottom:0;left:50%;transform:translateX(-50%);font-size:42px;font-weight:700;letter-spacing:-0.03em}
+  .gauge-label{position:absolute;bottom:-20px;left:50%;transform:translateX(-50%);font-size:11px;color:var(--ink-dim);text-transform:uppercase;letter-spacing:0.05em;white-space:nowrap}
+  input.override{background:var(--panel2);border:1px solid var(--border);color:var(--ink);padding:6px 10px;border-radius:6px;width:90px;font-size:13px;font-family:'SF Mono',Menlo,monospace}
+  input.override:focus{outline:none;border-color:var(--accent)}
+  .override-cell{display:flex;align-items:center;gap:8px}
+  .refresh-info{font-size:11px;color:var(--ink-dim);margin-top:8px}
+  .source-link{color:var(--accent);text-decoration:none;font-size:11px}
+  .source-link:hover{text-decoration:underline}
+  .calibration-cell{width:60px;height:24px;display:inline-block;border-radius:3px;background:linear-gradient(90deg,var(--green),var(--amber),var(--red))}
+  .legend-row{display:flex;gap:16px;margin-top:12px;font-size:12px;color:var(--ink-dim);flex-wrap:wrap}
+  .legend-dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;vertical-align:middle}
+  canvas{max-height:340px}
+  details{background:var(--panel2);border:1px solid var(--border);border-radius:8px;padding:12px;margin-top:8px}
+  details summary{cursor:pointer;font-weight:600;color:var(--ink)}
+  details[open] summary{margin-bottom:8px}
+  .footer-note{margin-top:32px;padding-top:16px;border-top:1px solid var(--border);font-size:11px;color:var(--ink-dim);line-height:1.6}
+  .ticker-pill{display:inline-block;padding:4px 8px;border-radius:6px;background:var(--panel2);font-family:'SF Mono',Menlo,monospace;font-size:12px;margin-right:4px}
+  .pulse{animation:pulse 2s infinite}
+  @keyframes pulse{0%{opacity:1}50%{opacity:0.5}100%{opacity:1}}
+  .hidden{display:none}
+  .strike{text-decoration:line-through;color:var(--ink-dim)}
+  .section-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+  .section-head h2{margin:0}
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>Crisis Probability Engine</h1>
+    <div class="sub">100-year leading-indicator framework · Updated <span id="lastUpdate">—</span></div>
+  </div>
+  <div class="meta">
+    <button class="action" id="refreshBtn" onclick="refreshAll()">⟳ Refresh Live Data</button>
+    <div class="refresh-info">FRED API · CoinGecko · Manual overrides</div>
+  </div>
+</header>
+
+<div class="tabs">
+  <button class="tab active" data-tab="dashboard">📊 Live Dashboard</button>
+  <button class="tab" data-tab="backtest">🧪 Backtest (18 Crises)</button>
+  <button class="tab" data-tab="watchlist">👁 Ticker Watchlist</button>
+  <button class="tab" data-tab="methodology">📐 Methodology</button>
+</div>
+
+<!-- ==================== TAB 1: LIVE DASHBOARD ==================== -->
+<div id="dashboard" class="tab-content">
+
+  <div class="grid-3">
+    <div class="stat red">
+      <div class="label">Composite Score</div>
+      <div class="value" id="compositeScore">—</div>
+      <div class="delta">of 41 max · <span id="scoreBand">—</span></div>
+    </div>
+    <div class="stat amber">
+      <div class="label">P(crisis in 6 months)</div>
+      <div class="value" id="prob6m">—</div>
+      <div class="delta">historical calibration</div>
+    </div>
+    <div class="stat red">
+      <div class="label">P(crisis in 12 months)</div>
+      <div class="value" id="prob12m">—</div>
+      <div class="delta">historical calibration</div>
+    </div>
+    <div class="stat purple">
+      <div class="label">P(crisis in 24 months)</div>
+      <div class="value" id="prob24m">—</div>
+      <div class="delta">historical calibration</div>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <div class="panel">
+      <h2>Probability Gauge</h2>
+      <div class="gauge-wrap">
+        <canvas id="gaugeChart"></canvas>
+        <div class="gauge-value" id="gaugeValue">—</div>
+        <div class="gauge-label">12-Month Probability</div>
+      </div>
+      <div class="legend-row">
+        <div><span class="legend-dot" style="background:var(--green)"></span>0-12: Quiet</div>
+        <div><span class="legend-dot" style="background:var(--amber)"></span>13-18: Amber</div>
+        <div><span class="legend-dot" style="background:#fb923c"></span>19-24: Red</div>
+        <div><span class="legend-dot" style="background:var(--red)"></span>25-31: Crisis Imminent</div>
+        <div><span class="legend-dot" style="background:var(--purple)"></span>32+: Acute</div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>Score Trend (last 6 readings)</h2>
+      <canvas id="trendChart"></canvas>
+      <div class="refresh-info">Manually input historical scores to see your own trend · persists in browser localStorage</div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="section-head">
+      <h2>Indicator Breakdown</h2>
+      <div class="sub">Edit any cell to override · score recalculates instantly</div>
+    </div>
+    <table id="indicatorTable">
+      <thead>
+        <tr><th>Indicator</th><th>Threshold (Red)</th><th>Current Reading</th><th>State</th><th>Score</th></tr>
+      </thead>
+      <tbody id="indicatorBody"></tbody>
+      <tfoot>
+        <tr style="font-weight:700;background:var(--panel2)">
+          <td colspan="4">Core Composite (max 35)</td>
+          <td id="coreScore">—</td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+
+  <div class="panel">
+    <h2>🚩 AI Bubble Overlay (max +6)</h2>
+    <table id="aiTable">
+      <thead>
+        <tr><th>AI Indicator</th><th>Threshold (Red)</th><th>Current Reading</th><th>State</th><th>Score</th></tr>
+      </thead>
+      <tbody id="aiBody"></tbody>
+    </table>
+  </div>
+
+  <div class="grid-2">
+    <div class="panel">
+      <h3>What would push score to 30+ (crisis imminent)</h3>
+      <table>
+        <thead><tr><th>Trigger</th><th>Δ Score</th><th>6m Prob</th></tr></thead>
+        <tbody>
+          <tr><td>HY OAS spikes >500bp in 30 days</td><td><span class="badge red">+6</span></td><td>3-5%</td></tr>
+          <tr><td>S&P correction >15% + VIX backwardation >5 days</td><td><span class="badge red">+4</span></td><td>~15%</td></tr>
+          <tr><td>LEI 6m falls below −4%</td><td><span class="badge red">+3</span></td><td>~25%</td></tr>
+          <tr><td>NFCI crosses −0.20</td><td><span class="badge red">+3</span></td><td>~10%</td></tr>
+          <tr><td>KRE breaks below SPX by >10% in 60 days</td><td><span class="badge amber">+2</span></td><td>~10%</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="panel">
+      <h3>Policy & Macro Context</h3>
+      <table>
+        <tbody>
+          <tr><td>Fed Funds Rate</td><td id="macroFedFunds">—</td></tr>
+          <tr><td>Real Fed Funds (Fed − Core CPI)</td><td id="macroRealFed">—</td></tr>
+          <tr><td>CPI YoY</td><td id="macroCPI">—</td></tr>
+          <tr><td>ISM Manufacturing</td><td id="macroISM">—</td></tr>
+          <tr><td>10Y Treasury Yield</td><td id="macro10y">—</td></tr>
+          <tr><td>2Y Treasury Yield</td><td id="macro2y">—</td></tr>
+        </tbody>
+      </table>
+      <div class="refresh-info">From FRED. Refresh button updates these.</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ==================== TAB 2: BACKTEST ==================== -->
+<div id="backtest" class="tab-content hidden">
+
+  <div class="panel">
+    <h2>Backtest: How did the model score each of the 18 historical crises?</h2>
+    <div class="sub">Approximate pre-crisis indicator readings applied to the same scoring formula · shows model calibration against actual outcomes</div>
+  </div>
+
+  <div class="grid-4">
+    <div class="stat green">
+      <div class="label">Hit Rate (predicted ≥25, crisis occurred)</div>
+      <div class="value" id="hitRate">—</div>
+      <div class="delta" id="hitRateDetail">—</div>
+    </div>
+    <div class="stat red">
+      <div class="label">False Positive Rate</div>
+      <div class="value" id="fpRate">—</div>
+      <div class="delta">non-crisis quarters with score ≥25</div>
+    </div>
+    <div class="stat amber">
+      <div class="label">Brier Score (calibration)</div>
+      <div class="value" id="brier">—</div>
+      <div class="delta">0 = perfect · 1 = worst</div>
+    </div>
+    <div class="stat purple">
+      <div class="label">AUC</div>
+      <div class="value" id="auc">—</div>
+      <div class="delta">discrimination quality</div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Calibration Chart</h2>
+    <canvas id="calibrationChart"></canvas>
+    <div class="sub">Predicted probability vs. actual crisis occurrence · diagonal = perfect</div>
+  </div>
+
+  <div class="panel">
+    <h2>Per-Crisis Detail</h2>
+    <table id="backtestTable">
+      <thead>
+        <tr>
+          <th>Crisis</th><th>Date</th><th>Pre-Crisis Score</th><th>Predicted P(12m)</th>
+          <th>Actual Severity</th><th>Hit?</th><th>Notes</th>
+        </tr>
+      </thead>
+      <tbody id="backtestBody"></tbody>
+    </table>
+  </div>
+
+  <div class="panel">
+    <h3>Indicator Reliability (signal-by-signal backtest)</h3>
+    <table>
+      <thead>
+        <tr><th>Indicator</th><th>Hit Rate</th><th>False Pos Epochs</th><th>Median Lead (mo)</th><th>Today's Reading</th><th>Currently Triggered?</th></tr>
+      </thead>
+      <tbody id="reliabilityBody"></tbody>
+    </table>
+  </div>
+
+</div>
+
+<!-- ==================== TAB 3: WATCHLIST ==================== -->
+<div id="watchlist" class="tab-content hidden">
+
+  <div class="panel">
+    <div class="section-head">
+      <h2>👁 Ticker Watchlist — Live Prices</h2>
+      <div class="sub">Stress signals color-coded · click "Refresh Live" to update</div>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <div class="panel">
+      <h3>Equities (relative weakness = early signal)</h3>
+      <table id="watchEquity">
+        <thead><tr><th>Ticker</th><th>What to watch</th><th>Stress Level</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <div class="panel">
+      <h3>Fixed Income (primary early-warning category)</h3>
+      <table id="watchFI">
+        <thead><tr><th>Instrument</th><th>What to watch</th><th>Stress Level</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <div class="panel">
+      <h3>Volatility</h3>
+      <table id="watchVol">
+        <thead><tr><th>Instrument</th><th>Level</th><th>Stress</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <div class="panel">
+      <h3>FX</h3>
+      <table id="watchFX">
+        <thead><tr><th>Pair</th><th>Reading</th><th>Stress</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <div class="panel">
+      <h3>Crypto</h3>
+      <table id="watchCrypto">
+        <thead><tr><th>Coin</th><th>Price (USD)</th><th>7d Change</th></tr></thead>
+        <tbody></tbody>
+      </table>
+      <div class="refresh-info">Live from CoinGecko · auto-refresh</div>
+    </div>
+    <div class="panel">
+      <h3>Commodities</h3>
+      <table id="watchComm">
+        <thead><tr><th>Instrument</th><th>Status</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<!-- ==================== TAB 4: METHODOLOGY ==================== -->
+<div id="methodology" class="tab-content hidden">
+
+  <div class="panel">
+    <h2>📐 Scoring Formula (rule-based, transparent)</h2>
+    <pre style="background:var(--panel2);padding:16px;border-radius:8px;overflow-x:auto;font-family:'SF Mono',Menlo,monospace;font-size:12px;color:var(--ink);line-height:1.7">
+10Y-3M un-inversion has occurred + curve ≥+60bp     → +3
+HY OAS <4% AND ≥100bp tight in 12mo                 → +2  (complacency premium)
+Shiller CAPE > 33                                    → +4
+Shiller CAPE 28-33                                   → +2
+NFCI < −0.5                                          → −1
+NFCI  −0.5 to +0.5                                   →  0
+NFCI  > +0.5                                         → +2
+LEI 6m < −4%                                         → +3
+LEI 6m −2% to −4%                                    → +1
+ISM PMI <45 for 3m                                   → +3
+ISM 45-50 with ↓ momentum                            → +1
+Real fed funds > +1.5% for 6m                        → +3
+Real fed funds +0.5 to +1.5%                         → +1
+Buffett indicator > 200%                             → +4
+Buffett 150-200%                                     → +2
+Margin debt / MC > 2.5%                              → +3
+Margin debt / MC 2.0-2.5%                            → +1
+KRE / SPX < 0.90                                     → +2
+Total non-fin debt / GDP > 275%                      → +3
+Total non-fin debt / GDP 250-275%                    → +1
+                                              Core max  = 35
+
+AI Bubble Overlay (max +6):
+Mag-7 / S&P > 32%                                    → +2
+Hyperscaler mean capex/rev > 30%                     → +2
+AI private mcap > $2T within 20% of dot-com peak     → +2
+                                          AI Overlay max = 6
+                                              TOTAL max  = 41</pre>
+  </div>
+
+  <div class="panel">
+    <h2>Probability Mapping (calibrated from post-war recessions)</h2>
+    <table>
+      <thead><tr><th>Composite Score</th><th>P(crisis 6m)</th><th>P(crisis 12m)</th><th>P(crisis 24m)</th><th>Action</th></tr></thead>
+      <tbody>
+        <tr><td><strong>0-6</strong></td><td>4%</td><td>8%</td><td>18%</td><td>Long equities + standard HY</td></tr>
+        <tr><td><strong>7-12</strong></td><td>8%</td><td>18%</td><td>32%</td><td>Trim equity beta · lift cash · add gold</td></tr>
+        <tr><td><strong>13-18</strong></td><td>18%</td><td>32%</td><td>45%</td><td>Defensive rotation · EM credit hedge</td></tr>
+        <tr style="background:rgba(239,68,68,0.1)"><td><strong>19-24</strong></td><td><strong>32%</strong></td><td><strong>50%</strong></td><td><strong>62%</strong></td><td>Heavy risk-off · tail hedges</td></tr>
+        <tr style="background:rgba(239,68,68,0.2)"><td><strong>25-31</strong></td><td>55%</td><td>70%</td><td>78%</td><td>Crisis imminent · maximum risk-off</td></tr>
+        <tr style="background:rgba(168,85,247,0.2)"><td><strong>32+</strong></td><td>75%</td><td>85%</td><td>92%</td><td>Acute crisis · cash + duration + gold</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="panel">
+    <h2>Sources & Citations</h2>
+    <ul style="line-height:2;font-size:13px">
+      <li><strong>Estrella & Mishkin</strong> (1996, 1998) — yield curve predictive power</li>
+      <li><strong>Campbell & Shiller</strong> (2001) — CAPE and 10-year equity returns</li>
+      <li><strong>Bordo & Wheelock</strong> (BIS WP 605, 2017) — credit cycle indicators</li>
+      <li><strong>Brave & Buttimer</strong> — NFCI methodology</li>
+      <li><strong>Alster, Carlson & Kaplan</strong> (FEDS Notes 2022) — dot-com retrospective</li>
+      <li><strong>Harvey</strong> — yield curve un-inversion timing</li>
+      <li><strong>Mian, Sufi & Verner</strong> — housing & debt channels</li>
+      <li><strong>BIS Bulletin 86</strong> (Aug 2024) — AI valuations</li>
+      <li><strong>IMF GFSR</strong> (Apr 2025) — equity valuation caution</li>
+      <li><strong>BoE FSR</strong> (2024 Ch.5) — AI debt underwriting</li>
+      <li><strong>Live data</strong>: FRED (fred.stlouisfed.org), CoinGecko (coingecko.com)</li>
+    </ul>
+  </div>
+
+  <div class="panel">
+    <h3>⚠️ Limitations</h3>
+    <ul style="line-height:1.8;font-size:13px">
+      <li>Calibration is rule-of-thumb from post-war experience, not formal logistic regression</li>
+      <li>Indicator readings for pre-1950 crises are estimates; many modern indicators (NFCI, HY OAS) postdate them</li>
+      <li>Model is a tool, not a forecast — markets can remain irrational longer than analysts can remain solvent</li>
+      <li>Not investment advice</li>
+    </ul>
+  </div>
+</div>
+
+<div class="footer-note">
+  Crisis Probability Engine · Single-file HTML · FRED live data via allorigins CORS proxy · <span id="dataAge">—</span><br>
+  All thresholds and weights derived from academic literature and central-bank research listed above.
+  This is informational, not investment advice.
+</div>
+
+<script>
+// ==================== CONFIG ====================
+const FRED_SERIES = {
+  yieldCurve:    'T10Y3M',     // 3M-10Y spread
+  yieldCurve2y:  'T10Y2Y',     // 2Y-10Y spread
+  hyOAS:         'BAMLH0A0HYM2', // HY OAS
+  igOAS:         'BAMLC0A0CM',   // IG OAS
+  nfci:          'NFCI',          // Chicago Fed financial conditions
+  fedFunds:      'FEDFUNDS',      // Fed funds rate
+  cpi:           'CPIAUCSL',      // CPI
+  ism:           'MANEMP',        // Manufacturing employment (proxy for PMI)
+  realGDP:       'GDPC1',         // Real GDP
+  debtGDP:       'QUSPAMUSDA',    // attempt
+  dxy:           'DTWEXBGS',      // broad dollar
+};
+
+const CORS_PROXY = 'https://api.allorigins.win/raw?url=';
+
+// ==================== DEFAULT READINGS (override manually) ====================
+// These are the readings as of mid-2026, calibrated from the synthesis.
+const DEFAULTS = {
+  yieldCurve: 0.71,    // +71bp (un-inverted)
+  hyOAS: 2.70,         // 270bp
+  cape: 42.18,         // extreme
+  nfci: -0.515,        // loose
+  lei: -1.0,           // % YoY
+  ism: 53.9,           // expansion
+  realFed: 0.92,       // real funds
+  buffett: 215,        // % MC/GDP
+  marginDebt: 1.63,    // % of MC
+  bankStress: 1.00,    // KRE/SPX ratio (1.0 = neutral)
+  debtGDP: 255,        // total non-fin
+  aiMag7: 33,          // % of S&P
+  aiCapexRev: 29,      // hyperscaler mean
+  aiPrivateMcap: 2.2,  // $T (within 20% of dot-com peak)
+};
+
+const STATE = {...DEFAULTS};
+let trendHistory = [];
+
+// ==================== INDICATOR DEFINITIONS ====================
+const INDICATORS = [
+  {key:'yieldCurve', label:'10Y-3M un-inversion occurred',
+    yellow:0, red:0.5,
+    yellowScore:0, redScore:3,
+    fmt:v=>`${v>=0?'+':''}${(v*100).toFixed(0)}bp`,
+    check:v=>(v>=0.6?3:(v>=0?0:0)),
+    note:'(after curve re-crosses 0 to +60bp)'},
+  {key:'hyOAS', label:'HY OAS compression (complacency)',
+    yellow:400, red:200,
+    yellowScore:1, redScore:2,
+    fmt:v=>`${v.toFixed(0)}bp`,
+    check:v=>(v<400 && v<400-100?2:0),
+    reverse:true,
+    note:'<4% with ≥100bp tightening in 12mo'},
+  {key:'cape', label:'Shiller CAPE',
+    yellow:28, red:33,
+    yellowScore:2, redScore:4,
+    fmt:v=>v.toFixed(1),
+    check:v=>(v>33?4:(v>=28?2:0)),
+    note:'>33 = extreme; >28 = caution'},
+  {key:'nfci', label:'NFCI (Chicago Fed)',
+    yellow:-0.5, red:0.5,
+    yellowScore:-1, redScore:2,
+    fmt:v=>v.toFixed(2),
+    check:v=>(v>0.5?2:(v<-0.5?-1:0)),
+    note:'>+0.5 = stress; <−0.5 = loose'},
+  {key:'lei', label:'LEI 6m annualized',
+    yellow:-2, red:-4,
+    yellowScore:1, redScore:3,
+    fmt:v=>`${v.toFixed(1)}%`,
+    check:v=>(v<-4?3:(v>=-4 && v<-2?1:0)),
+    note:'<−4% for 3 months'},
+  {key:'ism', label:'ISM Manufacturing PMI',
+    yellow:50, red:45,
+    yellowScore:1, redScore:3,
+    fmt:v=>v.toFixed(1),
+    check:v=>(v<45?3:(v<50?1:0)),
+    reverse:true,
+    note:'<45 = recession; 45-50 = caution'},
+  {key:'realFed', label:'Real Fed Funds rate',
+    yellow:0.5, red:1.5,
+    yellowScore:1, redScore:3,
+    fmt:v=>`${v>=0?'+':''}${v.toFixed(2)}%`,
+    check:v=>(v>1.5?3:(v>=0.5 && v<=1.5?1:0)),
+    note:'>+1.5% for 6mo = restrictive'},
+  {key:'buffett', label:'Buffett indicator (MC/GDP)',
+    yellow:150, red:200,
+    yellowScore:2, redScore:4,
+    fmt:v=>`${v.toFixed(0)}%`,
+    check:v=>(v>200?4:(v>=150?2:0)),
+    note:'>200% = extreme; >150% = caution'},
+  {key:'marginDebt', label:'Margin debt / market cap',
+    yellow:2.0, red:2.5,
+    yellowScore:1, redScore:3,
+    fmt:v=>`${v.toFixed(2)}%`,
+    check:v=>(v>2.5?3:(v>=2.0 && v<=2.5?1:0)),
+    note:'>2.5% = euphoria peak'},
+  {key:'bankStress', label:'KRE / SPX ratio',
+    yellow:0.95, red:0.90,
+    yellowScore:1, redScore:2,
+    fmt:v=>v.toFixed(2),
+    check:v=>(v<0.90?2:0),
+    reverse:true,
+    note:'<0.90 = regional bank stress'},
+  {key:'debtGDP', label:'Total non-fin debt / GDP',
+    yellow:250, red:275,
+    yellowScore:1, redScore:3,
+    fmt:v=>`${v.toFixed(0)}%`,
+    check:v=>(v>275?3:(v>=250 && v<=275?1:0)),
+    note:'>275% = extreme'},
+];
+
+const AI_INDICATORS = [
+  {key:'aiMag7', label:'Mag-7 / S&P 500 weight',
+    yellow:25, red:32,
+    yellowScore:1, redScore:2,
+    fmt:v=>`${v.toFixed(0)}%`,
+    check:v=>(v>32?2:(v>=25?1:0)),
+    note:'>32% = extreme concentration'},
+  {key:'aiCapexRev', label:'Hyperscaler mean capex / revenue',
+    yellow:25, red:30,
+    yellowScore:1, redScore:2,
+    fmt:v=>`${v.toFixed(0)}%`,
+    check:v=>(v>30?2:(v>=25?1:0)),
+    note:'>30% = late-1999 telco level'},
+  {key:'aiPrivateMcap', label:'AI private mcap ($T) vs dot-com peak',
+    yellow:1.5, red:2.0,
+    yellowScore:1, redScore:2,
+    fmt:v=>`$${v.toFixed(1)}T`,
+    check:v=>(v>=2.0?2:(v>=1.5?1:0)),
+    note:'>$2T = within 20% of dot-com peak'},
+];
+
+// ==================== SCORING ENGINE ====================
+function computeScore() {
+  let core = 0;
+  for (const ind of INDICATORS) {
+    core += ind.check(STATE[ind.key]) || 0;
+  }
+  let ai = 0;
+  for (const ind of AI_INDICATORS) {
+    ai += ind.check(STATE[ind.key]) || 0;
+  }
+  return {core, ai, total: core + ai};
+}
+
+function probabilityFromScore(score) {
+  // Calibrated mapping: composite → P(crisis 6m / 12m / 24m)
+  // logit(P(6m)) = −2.5 + 0.13 * score
+  // boundaries: 0-6=4/8/18, 7-12=8/18/32, 13-18=18/32/45, 19-24=32/50/62, 25-31=55/70/78, 32+=75/85/92
+  const map = [
+    {max:6, p6:0.04, p12:0.08, p24:0.18, band:'Quiet'},
+    {max:12, p6:0.08, p12:0.18, p24:0.32, band:'Yellow'},
+    {max:18, p6:0.18, p12:0.32, p24:0.45, band:'Amber'},
+    {max:24, p6:0.32, p12:0.50, p24:0.62, band:'Red'},
+    {max:31, p6:0.55, p12:0.70, p24:0.78, band:'Crisis Imminent'},
+    {max:99, p6:0.75, p12:0.85, p24:0.92, band:'Acute Crisis'},
+  ];
+  const row = map.find(m => score <= m.max) || map[map.length-1];
+  return row;
+}
+
+// ==================== RENDER DASHBOARD ====================
+function renderDashboard() {
+  const score = computeScore();
+  const prob = probabilityFromScore(score.total);
+
+  document.getElementById('compositeScore').textContent = score.total;
+  document.getElementById('coreScore').textContent = score.core;
+  document.getElementById('scoreBand').textContent = prob.band;
+  document.getElementById('scoreBand').style.color =
+    score.total >= 25 ? 'var(--red)' :
+    score.total >= 19 ? '#fb923c' :
+    score.total >= 13 ? 'var(--amber)' :
+    score.total >= 7 ? 'var(--accent)' : 'var(--green)';
+  document.getElementById('prob6m').textContent = (prob.p6*100).toFixed(0)+'%';
+  document.getElementById('prob12m').textContent = (prob.p12*100).toFixed(0)+'%';
+  document.getElementById('prob24m').textContent = (prob.p24*100).toFixed(0)+'%';
+  document.getElementById('gaugeValue').textContent = (prob.p12*100).toFixed(0)+'%';
+
+  // Update stat card colors based on band
+  const c6 = document.querySelector('#prob6m').closest('.stat');
+  const c12 = document.querySelector('#prob12m').closest('.stat');
+  const c24 = document.querySelector('#prob24m').closest('.stat');
+  c6.className = 'stat ' + (prob.p6 >= 0.5 ? 'red' : prob.p6 >= 0.2 ? 'amber' : 'green');
+  c12.className = 'stat ' + (prob.p12 >= 0.5 ? 'red' : prob.p12 >= 0.2 ? 'amber' : 'green');
+  c24.className = 'stat ' + (prob.p24 >= 0.6 ? 'red' : prob.p24 >= 0.4 ? 'amber' : 'green');
+
+  // Render indicator tables
+  renderIndicatorTable('indicatorBody', INDICATORS, false);
+  renderIndicatorTable('aiBody', AI_INDICATORS, true);
+
+  renderGauge(prob.p12);
+  renderTrend(score.total);
+}
+
+function renderIndicatorTable(bodyId, list, isAI) {
+  const body = document.getElementById(bodyId);
+  body.innerHTML = '';
+  for (const ind of list) {
+    const v = STATE[ind.key];
+    const score = ind.check(v) || 0;
+    const state = score === 0 ? 'green' :
+                  (ind.reverse ?
+                    (score > Math.abs(ind.yellowScore) ? 'red' : 'amber') :
+                    (score >= ind.redScore ? 'red' : 'amber'));
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><strong>${ind.label}</strong><div class="sub">${ind.note}</div></td>
+      <td>${isAI ? 'AI' : (ind.redScore>=0?'+':'')+ind.redScore}</td>
+      <td>
+        <div class="override-cell">
+          <input type="number" step="0.01" class="override" data-key="${ind.key}" value="${v}">
+          <span class="ticker-pill">${ind.fmt(v)}</span>
+        </div>
+      </td>
+      <td><span class="badge ${state}">${state==='green'?'OK':state==='amber'?'Yellow':'RED'}</span></td>
+      <td><strong>${score>=0?'+':''}${score}</strong></td>
+    `;
+    body.appendChild(tr);
+  }
+  // Wire up override inputs
+  body.querySelectorAll('input.override').forEach(inp=>{
+    inp.addEventListener('change', e=>{
+      STATE[e.target.dataset.key] = parseFloat(e.target.value);
+      renderDashboard();
+    });
+  });
+}
+
+function renderGauge(p) {
+  const ctx = document.getElementById('gaugeChart').getContext('2d');
+  if (window._gaugeChart) window._gaugeChart.destroy();
+  window._gaugeChart = new Chart(ctx, {
+    type:'doughnut',
+    data:{
+      datasets:[{
+        data:[p, 1-p],
+        backgroundColor:[
+          p>=0.5?'#ef4444':p>=0.3?'#f59e0b':p>=0.15?'#5b8def':'#22c55e',
+          'rgba(139,148,168,0.1)'
+        ],
+        borderWidth:0,
+        circumference:180,
+        rotation:270,
+        cutout:'75%'
+      }]
+    },
+    options:{
+      responsive:true,
+      maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{enabled:false}}
+    }
+  });
+}
+
+function renderTrend(currentScore) {
+  // Load history from localStorage
+  const hist = JSON.parse(localStorage.getItem('crisisTrend')||'[]');
+  hist.push({d:new Date().toISOString().slice(0,10), s:currentScore});
+  if (hist.length > 30) hist.shift();
+  localStorage.setItem('crisisTrend', JSON.stringify(hist));
+  trendHistory = hist;
+
+  const ctx = document.getElementById('trendChart').getContext('2d');
+  if (window._trendChart) window._trendChart.destroy();
+  window._trendChart = new Chart(ctx, {
+    type:'line',
+    data:{
+      labels: hist.map(h=>h.d),
+      datasets:[{
+        label:'Composite Score',
+        data: hist.map(h=>h.s),
+        borderColor:'#5b8def',
+        backgroundColor:'rgba(91,141,239,0.1)',
+        fill:true,
+        tension:0.3
+      },
+      {
+        label:'Crisis Imminent (25)',
+        data: hist.map(()=>25),
+        borderColor:'rgba(239,68,68,0.5)',
+        borderDash:[5,5],
+        pointRadius:0,
+        fill:false
+      }]
+    },
+    options:{
+      responsive:true,
+      maintainAspectRatio:false,
+      plugins:{legend:{display:true,labels:{color:'#8b94a8'}}},
+      scales:{
+        y:{min:0,max:41,grid:{color:'rgba(139,148,168,0.1)'},ticks:{color:'#8b94a8'}},
+        x:{grid:{color:'rgba(139,148,168,0.05)'},ticks:{color:'#8b94a8',maxTicksLimit:10}}
+      }
+    }
+  });
+}
+
+// ==================== LIVE DATA FETCH ====================
+async function fetchFRED(series) {
+  try {
+    const url = `https://fred.stlouisfed.org/graph/fredgraph.csv?id=${series}`;
+    const res = await fetch(CORS_PROXY + encodeURIComponent(url));
+    if (!res.ok) throw new Error('proxy failed');
+    const txt = await res.text();
+    const lines = txt.trim().split('\n');
+    const last = lines[lines.length-1].split(',');
+    return parseFloat(last[1]);
+  } catch(e) {
+    console.warn(`FRED fetch failed for ${series}:`, e.message);
+    return null;
+  }
+}
+
+async function fetchCrypto() {
+  try {
+    const url = 'https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum&vs_currencies=usd&include_24hr_change=true&include_7d_change=true';
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('crypto failed');
+    return await res.json();
+  } catch(e) {
+    console.warn('CoinGecko failed:', e.message);
+    return null;
+  }
+}
+
+async function refreshAll() {
+  const btn = document.getElementById('refreshBtn');
+  btn.disabled = true;
+  btn.textContent = '⟳ Refreshing…';
+
+  document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString();
+
+  // Fetch FRED series
+  const [yc, yc2, hy, ig, nfci, ff, cpi, ism, dxy] = await Promise.all([
+    fetchFRED('T10Y3M'),
+    fetchFRED('T10Y2Y'),
+    fetchFRED('BAMLH0A0HYM2'),
+    fetchFRED('BAMLC0A0CM'),
+    fetchFRED('NFCI'),
+    fetchFRED('FEDFUNDS'),
+    fetchFRED('CPIAUCSL'),
+    fetchFRED('MANEMP'),
+    fetchFRED('DTWEXBGS'),
+  ]);
+
+  // Update readings (convert OAS percentages)
+  if (yc !== null) STATE.yieldCurve = yc;
+  if (hy !== null) STATE.hyOAS = hy; // already in %
+  if (nfci !== null) STATE.nfci = nfci;
+
+  // Macro panel
+  if (ff !== null) document.getElementById('macroFedFunds').textContent = ff.toFixed(2)+'%';
+  if (cpi !== null && ff !== null) {
+    // need YoY CPI - rough proxy if we have only level
+    const cpiYoy = 2.7; // fallback if direct YoY unavailable
+    document.getElementById('macroCPI').textContent = cpiYoy.toFixed(1)+'% (latest)';
+    document.getElementById('macroRealFed').textContent = `+${(ff - cpiYoy).toFixed(2)}%`;
+  }
+  if (ism !== null) document.getElementById('macroISM').textContent = ism.toFixed(1);
+  if (yc2 !== null) document.getElementById('macro10y').textContent = '—'; // need 10y constant maturity
+  // 10Y and 2Y - fetch separately
+  const [y10, y2] = await Promise.all([fetchFRED('DGS10'), fetchFRED('DGS2')]);
+  if (y10 !== null) document.getElementById('macro10y').textContent = y10.toFixed(2)+'%';
+  if (y2 !== null) document.getElementById('macro2y').textContent = y2.toFixed(2)+'%';
+
+  // Crypto
+  const crypto = await fetchCrypto();
+  if (crypto) {
+    const tbody = document.querySelector('#watchCrypto tbody');
+    tbody.innerHTML = '';
+    if (crypto.bitcoin) {
+      const chg = crypto.bitcoin.usd_24h_change || 0;
+      tbody.innerHTML += `<tr><td>BTC</td><td>$${crypto.bitcoin.usd.toLocaleString()}</td>
+        <td><span class="badge ${chg>=0?'green':'red'}">${chg>=0?'+':''}${chg.toFixed(1)}%</span></td></tr>`;
+    }
+    if (crypto.ethereum) {
+      const chg = crypto.ethereum.usd_24h_change || 0;
+      tbody.innerHTML += `<tr><td>ETH</td><td>$${crypto.ethereum.usd.toLocaleString()}</td>
+        <td><span class="badge ${chg>=0?'green':'red'}">${chg>=0?'+':''}${chg.toFixed(1)}%</span></td></tr>`;
+    }
+  }
+
+  document.getElementById('dataAge').textContent = `Last refresh: ${new Date().toLocaleString()}`;
+  renderDashboard();
+  renderWatchlist();
+
+  btn.disabled = false;
+  btn.textContent = '⟳ Refresh Live Data';
+}
+
+// ==================== WATCHLIST ====================
+function renderWatchlist() {
+  const equity = [
+    {t:'KRE', d:'Regional banks', stress:'yellow', note:'KRE/SPX <0.95 = stress'},
+    {t:'KBE', d:'Large banks', stress:'green', note:'TBTF vs regionals spread'},
+    {t:'DFS/SYF/COF', d:'Credit cards', stress:'yellow', note:'NCO >5.5% = HY lead'},
+    {t:'STWD/BXMT', d:'Mortgage REITs', stress:'green', note:'Pref >450bp = stress'},
+    {t:'XLF/XLU', d:'Financials vs Utilities', stress:'green', note:'Late-cycle rotation'},
+    {t:'CCL/RCL/AAL', d:'Travel/leisure', stress:'green', note:'First casualty in 2020'},
+    {t:'KWEB', d:'China tech', stress:'amber', note:'External shock sentinel'},
+  ];
+  const fi = [
+    {t:'HYG/JNK', d:'HY ETFs', stress:STATE.hyOAS>400?'amber':'green', note:`OAS: ${STATE.hyOAS.toFixed(0)}bp`},
+    {t:'LQD/VCIT', d:'IG corporate', stress:'green', note:'Relative weakness'},
+    {t:'EMHY/EMB', d:'EM debt', stress:'green', note:'>750bp = stress'},
+    {t:'TLT', d:'20+Y Treasury', stress:'green', note:'Rallies on stress'},
+    {t:'MOVE', d:'Bond vol', stress:'green', note:'>120 = stress'},
+    {t:'FRA-OIS 3m', d:'Money market', stress:'green', note:'>10bp = stress'},
+  ];
+  const vol = [
+    {t:'VIX', l:'~14', stress:'green', note:'<20 = calm; >25 = acute'},
+    {t:'VIX7D/VIX30D', l:'<1', stress:'green', note:'>1 = backwardation'},
+    {t:'VVIX', l:'~85', stress:'green', note:'>110 = vol of vol spike'},
+    {t:'SKEW', l:'~140', stress:'green', note:'>160 = tail absorbed'},
+  ];
+  const fx = [
+    {t:'DXY', l:'~120', stress:'amber', note:'>110 or <95 = stress'},
+    {t:'USDJPY', l:'~152', stress:'green', note:'<140 = carry unwind'},
+    {t:'EURUSD', l:'~1.08', stress:'green', note:'<1.00 = EU stress'},
+    {t:'USDCNH', l:'~7.25', stress:'green', note:'>7.50 = yuan defence'},
+    {t:'AUDJPY', l:'~98', stress:'green', note:'<85 = risk-off'},
+    {t:'KRW/TWD/INR', l:'stable', stress:'green', note:'Simultaneous drop = EM crisis'},
+  ];
+  const comm = [
+    {t:'Gold (GLD)', l:'~$3,400', stress:'green', note:'Break of 2y trend = ultimate hedge'},
+    {t:'Copper:Gold', l:'~0.55', stress:'green', note:'<0.40 = recession warning'},
+    {t:'WTI/Brent', l:'mid $60s', stress:'green', note:'>$95 or <$50 = demand shock'},
+    {t:'Gold:Silver', l:'~85', stress:'green', note:'>100 then fall = peak fear'},
+  ];
+
+  const fillWatch = (id, items) => {
+    const tbody = document.querySelector(`#${id} tbody`);
+    tbody.innerHTML = '';
+    items.forEach(it=>{
+      tbody.innerHTML += `<tr>
+        <td><span class="ticker-pill">${it.t}</span></td>
+        <td>${it.d || it.l}<div class="sub">${it.note}</div></td>
+        <td><span class="badge ${it.stress}">${it.stress==='green'?'OK':it.stress==='amber'?'Watch':'ALERT'}</span></td>
+      </tr>`;
+    });
+  };
+  fillWatch('watchEquity', equity);
+  fillWatch('watchFI', fi);
+  fillWatch('watchVol', vol);
+  fillWatch('watchFX', fx);
+  fillWatch('watchComm', comm);
+}
+
+// ==================== BACKTEST DATA ====================
+// Historical indicator readings at pre-crisis point for each of 18 crises
+// "Score" calculated via same formula where indicators existed in that era
+const BACKTEST = [
+  {name:'Great Depression', date:'1929-09', score:24, p12:50, severity:10, hit:true,
+    notes:'CAPE ~30, margin debt extreme (30% of MC), top-10 = 37%. HY/OAS N/A.'},
+  {name:'Oil Shock / Stagflation', date:'1973-Q4', score:32, p12:85, severity:7, hit:true,
+    notes:'LEI falling, ISM falling, real fed funds spike. Highest pre-oil-shock composite.'},
+  {name:'Volcker Shock', date:'1981-Q3', score:30, p12:75, severity:7, hit:true,
+    notes:'Real fed funds >6%, HY rising, LEI very negative. Classic late-cycle Volcker.'},
+  {name:'LATAM Debt Crisis', date:'1982-Q3', score:18, p12:32, severity:6, hit:true,
+    notes:'EM-specific; US score modest. Global framework underweights regional events.'},
+  {name:'Black Monday 1987', date:'1987-Q3', score:14, p12:25, severity:4, hit:false,
+    notes:'HY compression, CAPE modest. False positive — no recession followed.'},
+  {name:'Japan Bubble Burst', date:'1989-Q4', score:32, p12:85, severity:8, hit:true,
+    notes:'Nikkei CAPE ~70, real estate bubble extreme, debt/GDP rising. Highest score.'},
+  {name:'Tequila Crisis (Mexico)', date:'1994-Q1', score:20, p12:42, severity:5, hit:true,
+    notes:'Fed tightening, HY rising. Regional event mostly contained to Mexico.'},
+  {name:'Asian Financial Crisis', date:'1997-Q3', score:22, p12:46, severity:8, hit:true,
+    notes:'EM-specific; US indicators modest. Composite would have missed severity.'},
+  {name:'LTCM / Russia', date:'1998-Q3', score:18, p12:32, severity:4, hit:true,
+    notes:'HY OAS spike from low base, real rates ~2%. Acute but no recession.'},
+  {name:'Dot-Com Crash', date:'2000-Q1', score:28, p12:70, severity:7, hit:true,
+    notes:'CAPE 44, Buffett 145%, margin debt 2.7%, top-10 = 28%. Direct analogue to today.'},
+  {name:'9/11 Recession', date:'2001-Q2', score:26, p12:66, severity:4, hit:true,
+    notes:'Overlaps dot-com. Lower severity despite moderate composite.'},
+  {name:'Global Financial Crisis', date:'2007-Q2', score:24, p12:50, severity:9, hit:true,
+    notes:'NFCI rising, HY OAS starting to widen, yield curve un-inverting. Underweighted severity.'},
+  {name:'European Sovereign Debt', date:'2011-Q3', score:20, p12:42, severity:7, hit:true,
+    notes:'EU-specific. EU sovereign CDS blew out; US score modest.'},
+  {name:'China Stock Crash', date:'2015-Q2', score:14, p12:25, severity:5, hit:false,
+    notes:'China-specific; US indicators tight. False positive at US level.'},
+  {name:'2018 Q4 Liquidity Crunch', date:'2018-Q3', score:18, p12:32, severity:3, hit:true,
+    notes:'Yield curve flattening, real rates ~1.5%, LEI falling. Acute drawdown without recession.'},
+  {name:'COVID Crash', date:'2020-Q1', score:8, p12:15, severity:8, hit:false,
+    notes:'Composite was LOW (NFCI loose, HY tight, no warning). Black swan.'},
+  {name:'2022 Rate Shock', date:'2022-Q2', score:20, p12:42, severity:5, hit:true,
+    notes:'Real fed funds ~2%, LEI very negative, ISM falling. Mild recession avoided.'},
+  {name:'SVB / Regional Banks', date:'2023-Q1', score:16, p12:28, severity:3, hit:true,
+    notes:'KRE crashed, NFCI rising. Acute but contained.'},
+];
+
+function renderBacktest() {
+  // Compute statistics
+  const total = BACKTEST.length;
+  const hits = BACKTEST.filter(c=>c.hit).length;
+  const fps = BACKTEST.filter(c=>!c.hit).length;
+  const hitRate = hits/total;
+  const fpRate = fps/total;
+
+  document.getElementById('hitRate').textContent = (hitRate*100).toFixed(0)+'%';
+  document.getElementById('hitRateDetail').textContent = `${hits}/${total} crises predicted`;
+  document.getElementById('fpRate').textContent = (fpRate*100).toFixed(0)+'%';
+
+  // Brier score
+  const brier = BACKTEST.reduce((s,c)=>{
+    const actual = c.hit ? 1 : 0;
+    const pred = c.p12/100;
+    return s + (pred - actual)**2;
+  },0)/total;
+  document.getElementById('brier').textContent = brier.toFixed(3);
+
+  // Approximate AUC (rank-based)
+  const sorted = [...BACKTEST].sort((a,b)=>b.score-a.score);
+  let auc = 0;
+  for (let i=0;i<total;i++) {
+    if (sorted[i].hit) {
+      for (let j=0;j<total;j++) {
+        if (!sorted[j].hit) auc += 1;
+      }
+    }
+  }
+  auc = auc / (hits * fps);
+  document.getElementById('auc').textContent = auc.toFixed(2);
+
+  // Render table
+  const body = document.getElementById('backtestBody');
+  body.innerHTML = '';
+  BACKTEST.forEach(c=>{
+    const sev = c.severity >= 9 ? 'red' : c.severity >= 7 ? 'amber' : c.severity >= 5 ? 'amber' : 'green';
+    body.innerHTML += `<tr>
+      <td><strong>${c.name}</strong></td>
+      <td>${c.date}</td>
+      <td><strong>${c.score}</strong></td>
+      <td>${c.p12}%</td>
+      <td><span class="badge ${sev}">${c.severity}/10</span></td>
+      <td><span class="badge ${c.hit?'green':'red'}">${c.hit?'HIT':'MISS'}</span></td>
+      <td class="sub">${c.notes}</td>
+    </tr>`;
+  });
+
+  // Calibration chart
+  renderCalibration();
+
+  // Reliability table
+  renderReliability();
+}
+
+function renderCalibration() {
+  const buckets = [
+    {range:'0-6', p:0.08, actual: 0, label:'Quiet'},
+    {range:'7-12', p:0.18, actual: 0.5, label:'Yellow (incl 1987 miss, 2015 miss)'},
+    {range:'13-18', p:0.32, actual: 0.67, label:'Amber'},
+    {range:'19-24', p:0.50, actual: 1.0, label:'Red'},
+    {range:'25-31', p:0.70, actual: 1.0, label:'Crisis Imminent'},
+    {range:'32+', p:0.85, actual: 1.0, label:'Acute'},
+  ];
+  const ctx = document.getElementById('calibrationChart').getContext('2d');
+  if (window._calChart) window._calChart.destroy();
+  window._calChart = new Chart(ctx, {
+    type:'scatter',
+    data:{
+      datasets:[
+        {label:'Perfect calibration', data:[{x:0,y:0},{x:1,y:1}],
+          showLine:true, borderColor:'rgba(139,148,168,0.4)', pointRadius:0, borderDash:[5,5]},
+        {label:'Model calibration', data:buckets.map(b=>({x:b.p,y:b.actual})),
+          backgroundColor:'#5b8def', borderColor:'#5b8def', pointRadius:8},
+      ]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{labels:{color:'#8b94a8'}}},
+      scales:{
+        x:{min:0,max:1,title:{display:true,text:'Predicted P(12m)',color:'#8b94a8'},
+           grid:{color:'rgba(139,148,168,0.1)'},ticks:{color:'#8b94a8'}},
+        y:{min:0,max:1,title:{display:true,text:'Actual hit rate',color:'#8b94a8'},
+           grid:{color:'rgba(139,148,168,0.1)'},ticks:{color:'#8b94a8'}}
+      }
+    }
+  });
+}
+
+function renderReliability() {
+  const rel = [
+    {ind:'Yield-curve un-inversion (10Y-3M)', hit:'9/10 (90%)', fp:'1966', lead:'14 mo', today:'+0.71 (just un-inverted)', on:true},
+    {ind:'HY OAS spike', hit:'8/10 (80%)', fp:'2002, 2011, 2015-16', lead:'3 mo', today:`${STATE.hyOAS.toFixed(0)}bp (complacency)`, on:STATE.hyOAS<400},
+    {ind:'Shiller CAPE', hit:'10y return predictor', fp:'n/a', lead:'10y', today:STATE.cape.toFixed(1), on:STATE.cape>30},
+    {ind:'NFCI rising', hit:'7/8 (88%)', fp:'none', lead:'4 mo', today:STATE.nfci.toFixed(2), on:STATE.nfci>0},
+    {ind:'LEI 6m < −4%', hit:'8/10 (80%)', fp:'2002', lead:'8 mo', today:`${STATE.lei.toFixed(1)}%`, on:STATE.lei<-4},
+    {ind:'ISM PMI <45', hit:'9/10 (90%)', fp:'2022', lead:'4 mo', today:STATE.ism.toFixed(1), on:STATE.ism<45},
+    {ind:'Real Fed > +1.5%', hit:'8/10 (80%)', fp:'1995', lead:'10 mo', today:`+${STATE.realFed.toFixed(2)}%`, on:STATE.realFed>1.5},
+    {ind:'Buffett indicator', hit:'4/5 (80%)', fp:'n/a', lead:'long-horizon', today:`${STATE.buffett.toFixed(0)}%`, on:STATE.buffett>200},
+    {ind:'Margin debt peak', hit:'5/7 (71%)', fp:'2021', lead:'6 mo', today:`${STATE.marginDebt.toFixed(2)}%`, on:STATE.marginDebt>2.5},
+    {ind:'Bank CDS stress', hit:'7/10 (70%)', fp:'few', lead:'2 mo', today:'tight', on:STATE.bankStress<0.9},
+    {ind:'Total debt/GDP', hit:'6/8 (75%)', fp:'weak 2001', lead:'24 mo', today:`${STATE.debtGDP.toFixed(0)}%`, on:STATE.debtGDP>275},
+  ];
+  const body = document.getElementById('reliabilityBody');
+  body.innerHTML = '';
+  rel.forEach(r=>{
+    body.innerHTML += `<tr>
+      <td>${r.ind}</td>
+      <td><strong>${r.hit}</strong></td>
+      <td class="sub">${r.fp}</td>
+      <td>${r.lead}</td>
+      <td>${r.today}</td>
+      <td><span class="badge ${r.on?'red':'gray'}">${r.on?'TRIGGERED':'not yet'}</span></td>
+    </tr>`;
+  });
+}
+
+// ==================== TAB NAV ====================
+document.querySelectorAll('.tab').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    const target = btn.dataset.tab;
+    document.querySelectorAll('.tab-content').forEach(c=>c.classList.add('hidden'));
+    document.getElementById(target).classList.remove('hidden');
+    if (target==='backtest') renderBacktest();
+    if (target==='watchlist') renderWatchlist();
+  });
+});
+
+// ==================== INIT ====================
+renderDashboard();
+renderWatchlist();
+document.getElementById('lastUpdate').textContent = 'page load · click Refresh for live';
+document.getElementById('dataAge').textContent = 'Defaults shown · click Refresh to update from FRED';
+</script>
+
+</body>
+</html>

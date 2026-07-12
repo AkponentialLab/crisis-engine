@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Financial Crisis Prediction Model — AI Bubble Monitor</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root{
+    --bg:#0d1117; --panel:#161b22; --border:#30363d; --text:#e6edf3; --muted:#8b949e;
+    --green:#3fb950; --yellow:#d29922; --orange:#f0883e; --red:#f85149; --blue:#58a6ff;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;line-height:1.45}
+  .wrap{max-width:1200px;margin:0 auto;padding:20px}
+  h1{font-size:22px;margin:0 0 4px}
+  h2{font-size:16px;margin:0 0 10px;color:var(--blue)}
+  .sub{color:var(--muted);font-size:13px;margin-bottom:16px}
+  .grid{display:grid;gap:14px}
+  .cols2{grid-template-columns:1fr 1fr}
+  @media(max-width:900px){.cols2{grid-template-columns:1fr}}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:16px}
+  .gaugeRow{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+  @media(max-width:900px){.gaugeRow{grid-template-columns:1fr}}
+  .bigNum{font-size:42px;font-weight:700;text-align:center;margin:4px 0}
+  .gaugeLabel{text-align:center;color:var(--muted);font-size:12px}
+  .verdict{text-align:center;font-size:14px;font-weight:600;margin-top:6px}
+  table{width:100%;border-collapse:collapse;font-size:12.5px}
+  th,td{padding:6px 8px;border-bottom:1px solid var(--border);text-align:left;vertical-align:middle}
+  th{color:var(--muted);font-weight:600;font-size:11.5px;text-transform:uppercase;letter-spacing:.4px}
+  td.num{text-align:right;font-variant-numeric:tabular-nums}
+  input[type=number]{width:78px;background:#0d1117;border:1px solid var(--border);color:var(--text);border-radius:5px;padding:4px 6px;font-size:12.5px}
+  input[type=range]{width:90px;accent-color:var(--blue);vertical-align:middle}
+  .scorebar{height:10px;border-radius:5px;background:#21262d;overflow:hidden;min-width:70px}
+  .scorebar>div{height:100%}
+  .pill{display:inline-block;padding:1px 8px;border-radius:10px;font-size:11px;font-weight:600}
+  .btn{background:#21262d;border:1px solid var(--border);color:var(--text);border-radius:6px;padding:7px 14px;font-size:13px;cursor:pointer;margin-right:8px}
+  .btn:hover{border-color:var(--blue)}
+  .note{font-size:12px;color:var(--muted)}
+  canvas{max-width:100%}
+  details{margin-top:10px}
+  summary{cursor:pointer;color:var(--blue);font-size:13px}
+  .method p{font-size:13px;color:#c9d1d9;margin:8px 0}
+  .flex{display:flex;gap:14px;flex-wrap:wrap;align-items:center}
+  textarea{width:100%;height:110px;background:#0d1117;border:1px solid var(--border);color:var(--text);border-radius:6px;font-family:monospace;font-size:11px;padding:8px}
+  .lead{font-size:11px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Financial Crisis Prediction Model</h1>
+  <div class="sub">100 years of crisis indicators, backtested and applied to the 2026 AI boom. All values, thresholds &amp; weights are editable — data as of <b>July 12, 2026</b>. Educational tool, not financial advice.</div>
+
+  <div class="gaugeRow">
+    <div class="card">
+      <h2>Composite Crisis Risk</h2>
+      <canvas id="gaugeComposite" height="130"></canvas>
+      <div class="bigNum" id="numComposite">–</div>
+      <div class="verdict" id="verdictComposite"></div>
+      <div class="gaugeLabel">Weighted blend of all indicators</div>
+    </div>
+    <div class="card">
+      <h2>Bubble Conditions ("IF")</h2>
+      <canvas id="gaugeBubble" height="130"></canvas>
+      <div class="bigNum" id="numBubble">–</div>
+      <div class="verdict" id="verdictBubble"></div>
+      <div class="gaugeLabel">Valuation &amp; speculation: CAPE, Buffett, margin debt, concentration, capex gap</div>
+    </div>
+    <div class="card">
+      <h2>Timing Triggers ("WHEN")</h2>
+      <canvas id="gaugeTrigger" height="130"></canvas>
+      <div class="bigNum" id="numTrigger">–</div>
+      <div class="verdict" id="verdictTrigger"></div>
+      <div class="gaugeLabel">Yield curve, credit gap, HY spreads, Fed stance — the historical timing signals</div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:14px">
+    <h2>Indicators — edit current values, thresholds &amp; weights</h2>
+    <div class="note" style="margin-bottom:8px">Score = position of <i>current value</i> between <i>Safe</i> (0) and <i>Extreme</i> (100), clamped. For inverse indicators (yield curve, HY spread) Safe &gt; Extreme. Weights auto-normalize.</div>
+    <table id="indTable">
+      <thead><tr>
+        <th>Indicator</th><th>Type</th><th>Current</th><th>Safe</th><th>Extreme</th><th>Weight</th><th>Score</th><th style="min-width:80px"></th><th>Historical record</th>
+      </tr></thead>
+      <tbody></tbody>
+    </table>
+    <div style="margin-top:12px">
+      <button class="btn" id="btnSave">Save settings</button>
+      <button class="btn" id="btnReset">Reset defaults</button>
+      <button class="btn" id="btnExport">Export JSON</button>
+      <span class="note" id="saveMsg"></span>
+    </div>
+    <details><summary>Import / export configuration JSON</summary>
+      <textarea id="jsonBox" spellcheck="false"></textarea>
+      <button class="btn" id="btnImport" style="margin-top:6px">Apply JSON</button>
+    </details>
+  </div>
+
+  <div class="grid cols2" style="margin-top:14px">
+    <div class="card">
+      <h2>Backtest: what this model scored on the eve of past crises</h2>
+      <canvas id="backtestChart" height="260"></canvas>
+      <div class="note" style="margin-top:8px">Bars use your current weights/thresholds applied to each episode's indicator values (missing data → weights renormalized). Green bars = control periods (no crisis followed). Historical values are best estimates — edit them in the JSON.</div>
+    </div>
+    <div class="card">
+      <h2>Backtest detail</h2>
+      <table id="btTable">
+        <thead><tr><th>Episode</th><th>Score</th><th>What followed</th><th class="lead">Signal lead time</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:14px">
+    <h2>Reading: is an AI financial crisis near?</h2>
+    <div id="narrative" class="method"></div>
+    <details>
+      <summary>Methodology, indicator evidence &amp; sources</summary>
+      <div class="method">
+        <p><b>Strongest historical predictors (ranked by documented hit rate):</b></p>
+        <p>1. <b>Yield curve inversion (10Y–3M)</b> — preceded every US recession since 1969, lead 6–24 months (avg ~14). Estrella–Mishkin (1996/98); used by NY Fed monthly. Caveat: 2022–24 inversion produced no recession — the model lets you discount it.</p>
+        <p>2. <b>BIS credit-to-GDP gap</b> — best single early-warning indicator of systemic <i>banking</i> crises (Borio–Lowe 2002; Drehmann–Juselius 2014). Gap &gt; +10pp = Basel III warning threshold. US gap is currently <i>negative</i> — a key difference vs 2007.</p>
+        <p>3. <b>Shiller CAPE</b> — every reading &gt;30 clustered around 1929, 1999, 2007, 2021 and now. Predicts poor 10-yr returns reliably, but NOT timing.</p>
+        <p>4. <b>Margin debt / GDP &amp; its YoY growth</b> — peaked months before 1929, 2000, 2007, 2021 tops. YoY growth &gt;50% has only occurred late-cycle (1999–2000, 2007, 2021, 2026).</p>
+        <p>5. <b>HY credit spreads</b> — sub-350bp = late-cycle complacency (mid-2007: ~250bp). The <i>widening</i> after the tights is the actual crash signal.</p>
+        <p>6. <b>Buffett indicator, market concentration, Fed real-rate stance, capex/monetization gap</b> — supporting context (Kindleberger–Minsky "displacement → credit boom → euphoria → distress → panic" cycle; Reinhart–Rogoff debt patterns).</p>
+        <p><b>Sources:</b> NY Fed / Estrella–Mishkin; BIS credit-gap statistics; Shiller data; FINRA margin statistics; FRED (T10Y3M, HY OAS, fed funds); Advisor Perspectives dshort updates; BIS Quarterly Reviews.</p>
+      </div>
+    </details>
+  </div>
+
+  <div class="note" style="margin:16px 4px">⚠ This is a heuristic scoring framework, not a validated statistical model. No indicator set has ever predicted crisis timing with precision; the yield curve and credit gap give 6–24 month windows at best. I'm not a financial advisor — use for study, not trading.</div>
+</div>
+
+<script>
+/* ============================================================
+   CONFIG — everything tunable lives here.
+   type "direct": higher value = riskier (safe < extreme)
+   type "inverse": lower value = riskier (safe > extreme)
+   group: "bubble" (IF conditions) or "trigger" (WHEN signals)
+   ============================================================ */
+const DEFAULTS = {
+  indicators: [
+    {id:"curve",  name:"Yield curve 10Y–3M (%)",        group:"trigger", type:"inverse", current:0.77, safe:1.5,  extreme:-0.5, weight:20,
+     record:"Preceded EVERY US recession since 1969; lead 6–24 mo (Estrella–Mishkin)"},
+    {id:"cgap",   name:"Credit-to-GDP gap (pp, BIS)",   group:"trigger", type:"direct",  current:-8,   safe:0,    extreme:10,   weight:10,
+     record:"Best banking-crisis predictor (Borio–Lowe); +10pp = Basel III warning"},
+    {id:"hy",     name:"High-yield OAS (bp)",           group:"trigger", type:"inverse", current:267,  safe:500,  extreme:250,  weight:10,
+     record:"Sub-350bp = complacency; mid-2007 hit ~250bp before GFC"},
+    {id:"fed",    name:"Real Fed funds vs neutral (pp)",group:"trigger", type:"direct",  current:1.0,  safe:-1,   extreme:2,    weight:5,
+     record:"Fed tightening preceded 1929, 1937, 1969, 1973, 2000, 2007 breaks"},
+    {id:"cape",   name:"Shiller CAPE",                  group:"bubble",  type:"direct",  current:41.8, safe:20,   extreme:44,   weight:15,
+     record:">30 only near 1929, 1999, 2007, 2021 & now; record 44.2 (2000)"},
+    {id:"buffett",name:"Buffett indicator (mkt cap/GDP %)",group:"bubble",type:"direct", current:236,  safe:100,  extreme:240,  weight:10,
+     record:"~2.1σ above mean; 140% at 2000 peak, 105% at 2007 peak"},
+    {id:"margin", name:"Margin debt / GDP (%)",         group:"bubble",  type:"direct",  current:4.1,  safe:1.5,  extreme:4.0,  weight:10,
+     record:"2.6% in 2000, 2.5% in 2007, 3.9% in 2021 — all near tops"},
+    {id:"mgrow",  name:"Margin debt YoY growth (%)",    group:"bubble",  type:"direct",  current:53.7, safe:10,   extreme:60,   weight:10,
+     record:">50% YoY only in 1999-2000, 2007, 2021, 2026"},
+    {id:"conc",   name:"Top-10 share of S&P 500 (%)",   group:"bubble",  type:"direct",  current:41,   safe:25,   extreme:40,   weight:5,
+     record:"~27% at 2000 peak; Mag-7 alone now 32.5%"},
+    {id:"capex",  name:"AI capex / AI revenue (×)",     group:"bubble",  type:"direct",  current:4.0,  safe:1,    extreme:4,    weight:5,
+     record:"~$400B capex vs ~$100B enterprise AI revenue; echoes 1999 telecom"}
+  ],
+  /* Backtest episodes: indicator values on the eve of each event. null = unavailable (weight renormalized).
+     crisis:true → red bar; false → green control bar. */
+  backtest: [
+    {name:"Sep 1929", crisis:true,  outcome:"−86% Dow; Great Depression", lead:"Crash 1 mo after margin peak",
+     v:{curve:-0.5, cgap:10, hy:null, fed:2.0, cape:32.6, buffett:87, margin:6.0, mgrow:45, conc:null, capex:null}},
+    {name:"Feb 1937", crisis:true,  outcome:"−49% S&P; 1937-38 recession", lead:"Fed reserve-req hikes 3-9 mo prior",
+     v:{curve:0.8, cgap:null, hy:null, fed:1.5, cape:22.2, buffett:80, margin:1.5, mgrow:20, conc:null, capex:null}},
+    {name:"Nov 1968", crisis:true,  outcome:"−36% S&P; 1969-70 recession", lead:"Curve inverted ~13 mo before trough",
+     v:{curve:-0.2, cgap:null, hy:null, fed:1.5, cape:22.3, buffett:78, margin:1.5, mgrow:15, conc:null, capex:null}},
+    {name:"Dec 1972", crisis:true,  outcome:"−48% S&P 1973-74; oil shock", lead:"Curve inverted mid-1973",
+     v:{curve:0.3, cgap:null, hy:null, fed:0.0, cape:18.7, buffett:78, margin:1.6, mgrow:25, conc:null, capex:null}},
+    {name:"Aug 1987", crisis:true,  outcome:"−34% in 2 mo (no recession)", lead:"Rate spike weeks before; no curve signal",
+     v:{curve:1.0, cgap:2, hy:400, fed:2.5, cape:18.3, buffett:65, margin:1.8, mgrow:40, conc:null, capex:null}},
+    {name:"Mar 2000", crisis:true,  outcome:"−49% S&P, −78% Nasdaq", lead:"Curve inverted Jul 2000; margin peak Mar",
+     v:{curve:0.2, cgap:5, hy:450, fed:3.0, cape:44.2, buffett:143, margin:2.6, mgrow:60, conc:27, capex:3.0}},
+    {name:"Jun 2007", crisis:true,  outcome:"−57% S&P; global banking crisis", lead:"Curve inverted Aug 2006 (~14 mo)",
+     v:{curve:-0.1, cgap:12, hy:260, fed:2.5, cape:27.3, buffett:105, margin:2.5, mgrow:55, conc:20, capex:1.5}},
+    {name:"Jan 2020", crisis:true,  outcome:"−34% in 5 wks (exogenous: COVID)", lead:"Curve inverted 2019 (~7 mo)",
+     v:{curve:0.3, cgap:-2, hy:340, fed:0.5, cape:31.0, buffett:155, margin:1.7, mgrow:0, conc:27, capex:1.0}},
+    {name:"Dec 2021", crisis:true,  outcome:"−25% S&P 2022 bear; no recession", lead:"Trigger = Fed pivot to hikes",
+     v:{curve:1.5, cgap:3, hy:310, fed:-6.0, cape:38.3, buffett:200, margin:3.9, mgrow:60, conc:30, capex:1.5}},
+    {name:"Jan 1995 (control)", crisis:false, outcome:"+180% over next 5 yrs", lead:"—",
+     v:{curve:1.9, cgap:-3, hy:350, fed:2.0, cape:20.2, buffett:65, margin:1.2, mgrow:5, conc:18, capex:1.0}},
+    {name:"Jan 2013 (control)", crisis:false, outcome:"+95% over next 5 yrs", lead:"—",
+     v:{curve:1.7, cgap:-10, hy:450, fed:-1.5, cape:21.9, buffett:105, margin:1.9, mgrow:15, conc:20, capex:1.0}},
+    {name:"Jul 2016 (control)", crisis:false, outcome:"+50% over next 3 yrs", lead:"—",
+     v:{curve:1.1, cgap:-6, hy:550, fed:-1.0, cape:26.4, buffett:120, margin:2.0, mgrow:-5, conc:19, capex:1.0}}
+  ]
+};
+
+let cfg = JSON.parse(JSON.stringify(DEFAULTS));
+try{ const s = localStorage.getItem("crisisModelCfg"); if(s) cfg = JSON.parse(s);}catch(e){}
+
+/* ---------- scoring ---------- */
+function scoreOne(ind, value){
+  if(value===null || value===undefined || isNaN(value)) return null;
+  const t = (value - ind.safe) / (ind.extreme - ind.safe);
+  return Math.max(0, Math.min(1, t)) * 100;
+}
+function composite(values, filterGroup){
+  let ws=0, tot=0;
+  for(const ind of cfg.indicators){
+    if(filterGroup && ind.group!==filterGroup) continue;
+    const s = scoreOne(ind, values[ind.id]);
+    if(s===null) continue;
+    ws += ind.weight; tot += s*ind.weight;
+  }
+  return ws>0 ? tot/ws : 0;
+}
+function currentValues(){ const o={}; cfg.indicators.forEach(i=>o[i.id]=i.current); return o; }
+
+function riskColor(s){ return s<30?getCss('--green'):s<55?getCss('--yellow'):s<75?getCss('--orange'):getCss('--red'); }
+function riskLabel(s){ return s<30?"LOW":s<55?"MODERATE":s<75?"ELEVATED":"HIGH / CRISIS-LIKE"; }
+function getCss(v){ return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
+
+/* ---------- gauges ---------- */
+const gauges = {};
+function makeGauge(canvasId, score){
+  const ctx = document.getElementById(canvasId);
+  if(gauges[canvasId]) gauges[canvasId].destroy();
+  gauges[canvasId] = new Chart(ctx, {
+    type:"doughnut",
+    data:{datasets:[{data:[score,100-score], backgroundColor:[riskColor(score),"#21262d"], borderWidth:0}]},
+    options:{rotation:-90, circumference:180, cutout:"72%", plugins:{legend:{display:false},tooltip:{enabled:false}}, animation:{duration:400}}
+  });
+}
+
+/* ---------- indicator table ---------- */
+function renderTable(){
+  const tb = document.querySelector("#indTable tbody");
+  tb.innerHTML="";
+  for(const ind of cfg.indicators){
+    const s = scoreOne(ind, ind.current);
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td><b>${ind.name}</b></td>
+      <td><span class="pill" style="background:${ind.group==='trigger'?'#1f3a5f':'#3a2a1f'};color:${ind.group==='trigger'?'#79c0ff':'#f0883e'}">${ind.group==='trigger'?'WHEN':'IF'}</span></td>
+      <td><input type="number" step="any" data-id="${ind.id}" data-f="current" value="${ind.current}"></td>
+      <td><input type="number" step="any" data-id="${ind.id}" data-f="safe" value="${ind.safe}"></td>
+      <td><input type="number" step="any" data-id="${ind.id}" data-f="extreme" value="${ind.extreme}"></td>
+      <td><input type="range" min="0" max="30" step="1" data-id="${ind.id}" data-f="weight" value="${ind.weight}" title="weight"> <span id="w_${ind.id}">${ind.weight}</span></td>
+      <td class="num" style="color:${riskColor(s)};font-weight:700">${s.toFixed(0)}</td>
+      <td><div class="scorebar"><div style="width:${s}%;background:${riskColor(s)}"></div></div></td>
+      <td class="note">${ind.record}</td>`;
+    tb.appendChild(tr);
+  }
+  tb.querySelectorAll("input").forEach(inp=>{
+    inp.addEventListener("input", e=>{
+      const ind = cfg.indicators.find(i=>i.id===e.target.dataset.id);
+      ind[e.target.dataset.f] = parseFloat(e.target.value);
+      if(e.target.dataset.f==="weight") document.getElementById("w_"+ind.id).textContent = e.target.value;
+      renderAllLight();
+    });
+  });
+}
+
+/* ---------- backtest ---------- */
+let btChart=null;
+function renderBacktest(){
+  const labels=[], scores=[], colors=[];
+  const rows=[];
+  for(const ep of cfg.backtest){
+    const s = composite(ep.v);
+    labels.push(ep.name); scores.push(s.toFixed(1));
+    colors.push(ep.crisis ? riskColor(Math.max(s,56)) : getCss('--green'));
+    rows.push({ep, s});
+  }
+  // add today
+  const sNow = composite(currentValues());
+  labels.push("TODAY (Jul 2026)"); scores.push(sNow.toFixed(1)); colors.push(getCss('--blue'));
+
+  const ctx=document.getElementById("backtestChart");
+  if(btChart) btChart.destroy();
+  btChart = new Chart(ctx,{type:"bar",
+    data:{labels, datasets:[{data:scores, backgroundColor:colors, borderRadius:3}]},
+    options:{indexAxis:'y', scales:{x:{min:0,max:100,grid:{color:"#21262d"},ticks:{color:"#8b949e"}},y:{grid:{display:false},ticks:{color:"#c9d1d9",font:{size:11}}}},
+    plugins:{legend:{display:false}}, animation:{duration:400}}});
+
+  const tb=document.querySelector("#btTable tbody"); tb.innerHTML="";
+  rows.forEach(({ep,s})=>{
+    const tr=document.createElement("tr");
+    tr.innerHTML=`<td>${ep.name}</td><td class="num" style="color:${riskColor(s)};font-weight:700">${s.toFixed(0)}</td><td class="note">${ep.outcome}</td><td class="lead">${ep.lead}</td>`;
+    tb.appendChild(tr);
+  });
+}
+
+/* ---------- narrative ---------- */
+function renderNarrative(cAll,cBub,cTrig){
+  const el=document.getElementById("narrative");
+  let timing;
+  if(cTrig<35) timing="Timing triggers have <b>not fired</b>: the yield curve is positive, the US credit-to-GDP gap is negative, and HY spreads — while complacently tight — have not begun widening. In every prior episode, the crash followed 6–24 months <i>after</i> these triggers fired, not before.";
+  else if(cTrig<60) timing="Timing triggers are <b>partially active</b> — watch for curve inversion, HY spread widening past ~400bp, or a positive credit gap. Historically that combination started a 6–24 month countdown.";
+  else timing="Timing triggers are <b>largely fired</b> — historically this stage preceded crisis onset by under 18 months.";
+  el.innerHTML=`
+  <p><b>Composite: ${cAll.toFixed(0)}/100 (${riskLabel(cAll)})</b> — Bubble conditions ${cBub.toFixed(0)}/100, Timing triggers ${cTrig.toFixed(0)}/100.</p>
+  <p><b>Bubble conditions rival 1999 and 2021:</b> CAPE ~42 (only 2000 was higher), Buffett indicator ~236% (record), margin debt at a record 4.1% of GDP growing 54% YoY (a growth rate seen only in 1999–2000, 2007 and 2021), top-10 concentration above the 2000 peak, and an AI capex-to-revenue gap (~$400B vs ~$100B) that echoes 1999 telecom overbuild, amplified by circular vendor financing (Nvidia↔OpenAI↔cloud deals).</p>
+  <p><b>But the historical timing signals disagree:</b> ${timing}</p>
+  <p><b>Bottom line by this framework:</b> conditions are crash-<i>capable</i> (fuel is abundant) but the two most reliable timing predictors of the past century — the yield curve and the credit-to-GDP gap — say the detonator hasn't been triggered. The 2026 setup most resembles <b>1998–99 or 2006</b>: late-boom, 1–3 years of runway historically, with the risk that any Fed tightening surprise, HY spread widening, or AI-revenue disappointment starts the countdown. A 1987-style valuation-only air pocket (crash without recession) remains possible at any time and is the scenario these timing indicators cannot catch.</p>`;
+}
+
+/* ---------- master render ---------- */
+function renderAllLight(){
+  const vals=currentValues();
+  const cAll=composite(vals), cBub=composite(vals,"bubble"), cTrig=composite(vals,"trigger");
+  makeGauge("gaugeComposite",cAll); makeGauge("gaugeBubble",cBub); makeGauge("gaugeTrigger",cTrig);
+  setNum("numComposite","verdictComposite",cAll); setNum("numBubble","verdictBubble",cBub); setNum("numTrigger","verdictTrigger",cTrig);
+  renderBacktest(); renderNarrative(cAll,cBub,cTrig);
+  document.getElementById("jsonBox").value = JSON.stringify(cfg,null,1);
+}
+function setNum(nid,vid,s){
+  const n=document.getElementById(nid); n.textContent=s.toFixed(0); n.style.color=riskColor(s);
+  const v=document.getElementById(vid); v.textContent=riskLabel(s); v.style.color=riskColor(s);
+}
+function renderAll(){ renderTable(); renderAllLight(); }
+
+/* ---------- buttons ---------- */
+document.getElementById("btnSave").onclick=()=>{ try{localStorage.setItem("crisisModelCfg",JSON.stringify(cfg)); flash("Saved to this browser.");}catch(e){flash("Save failed.");} };
+document.getElementById("btnReset").onclick=()=>{ cfg=JSON.parse(JSON.stringify(DEFAULTS)); try{localStorage.removeItem("crisisModelCfg");}catch(e){} renderAll(); flash("Defaults restored."); };
+document.getElementById("btnExport").onclick=()=>{ navigator.clipboard&&navigator.clipboard.writeText(JSON.stringify(cfg)); flash("Config copied to clipboard."); };
+document.getElementById("btnImport").onclick=()=>{ try{ cfg=JSON.parse(document.getElementById("jsonBox").value); renderAll(); flash("Applied."); }catch(e){ flash("Invalid JSON."); } };
+function flash(m){ const el=document.getElementById("saveMsg"); el.textContent=m; setTimeout(()=>el.textContent="",2500); }
+
+renderAll();
+</script>
+</body>
+</html>
