@@ -100,4 +100,4 @@ Then click **⟳ Refresh Live Data** to pull real-time readings from FRED (yield
 
 ## License
 
-MIT — use freely. Citations appreciated.
+MIT — use freely. Citations appreciated.// updated Sun Jul 12 21:18:26 +07 2026
